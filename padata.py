@@ -8,7 +8,7 @@ import base64
 import json
 
 # Constants
-username = "Gabriela"
+username = "gabriela"
 realm = "PRAIRIE-FIRE.LAB"
 password = "P@ssw0rd12!@"  # Updated password
 salt = realm + username
