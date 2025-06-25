@@ -36,7 +36,7 @@ def derive_kerberos_key(username: str, realm: str, password: str, iterations: in
         iterations=iterations,
         dklen=key_length
     )
-    print("    ✔ PBKDF2 complete.")
+    print("     PBKDF2 complete.")
     print(f"    Derived Key (raw): {key}")
     print(f"    Derived Key (hex): {binascii.hexlify(key).decode('ascii')}\n")
 
