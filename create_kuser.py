@@ -2,14 +2,12 @@ import hashlib
 import binascii
 
 def derive_kerberos_key(username: str, realm: str, password: str, iterations: int = 4096, key_length: int = 32):
-    """
-    Verbosely derive the Kerberos AES256 key (Kuser) from password + salt using PBKDF2-HMAC-SHA1.
-    """
-    print("\n[+] Starting Kerberos Key Derivation")
+
+    print("\n Starting Kerberos Key Derivation")
     print("    Kerberos encryption type: AES256-CTS-HMAC-SHA1-96 (etype 18)")
     print("    PBKDF2 with HMAC-SHA1, 4096 iterations, 32-byte output\n")
 
-    print(f"[+] Input Parameters:")
+    print(f" Input Parameters:")
     print(f"    Username: {username}")
     print(f"    Realm   : {realm}")
     print(f"    Password: {password}\n")
@@ -17,18 +15,18 @@ def derive_kerberos_key(username: str, realm: str, password: str, iterations: in
     # Normalize inputs
     normalized_username = username.lower()
     normalized_realm = realm.upper()
-    print("[+] Normalized:")
+    print(" Normalized:")
     print(f"    username → {normalized_username}")
     print(f"    realm    → {normalized_realm}\n")
 
     # Kerberos salt = UPPERCASE_REALM + lowercase_username
     salt = normalized_realm + normalized_username
-    print("[+] Salt Construction:")
+    print(" Salt Construction:")
     print(f"    salt = realm.upper() + username.lower()")
     print(f"    salt = {salt}")
     print(f"    Salt (hex): {salt.encode('utf-8').hex()}\n")
 
-    print("[+] Deriving key using PBKDF2-HMAC-SHA1...")
+    print(" Deriving key using PBKDF2-HMAC-SHA1...")
     key = hashlib.pbkdf2_hmac(
         hash_name='sha1',
         password=password.encode('utf-8'),
