@@ -13,12 +13,12 @@ realm = "PRAIRIE-FIRE.LAB"
 password = "P@ssw0rd12!@"  # Updated password
 salt = realm + username
 
-print(f"[*] Using credentials:\n    Username: {username}\n    Realm: {realm}\n    Password: {password}")
-print(f"[*] Derived salt for key generation: {salt}")
+print(f"Using credentials:\n    Username: {username}\n    Realm: {realm}\n    Password: {password}")
+print(f"Derived salt for key generation: {salt}")
 
 # Step 1: Derive Kuser key using PBKDF2
 def derive_kuser(password, salt, iterations=4096, dklen=32):
-    print("[*] Deriving Kuser key with PBKDF2 (HMAC-SHA1, 4096 iterations)...")
+    print("Deriving Kuser key with PBKDF2 (HMAC-SHA1, 4096 iterations)...")
     key = hashlib.pbkdf2_hmac('sha1', password.encode(), salt.encode(), iterations, dklen)
     print(f"[+] Derived Kuser (hex): {key.hex()}")
     return key
@@ -38,7 +38,7 @@ class Timestamp(univ.Sequence):
     )
 
 def encode_timestamp():
-    print("[*] Creating current timestamp in UTC...")
+    print("Creating current timestamp in UTC...")
     now = datetime.now(timezone.utc)
     formatted_time = now.strftime("%Y%m%d%H%M%SZ")
     print(f"    UTC Timestamp: {formatted_time}")
@@ -54,7 +54,7 @@ asn1_data = encode_timestamp()
 
 # Step 4: Encrypt timestamp using AES256-CBC
 def encrypt_timestamp(asn1_data, kuser):
-    print("[*] Encrypting timestamp with AES256-CBC...")
+    print("Encrypting timestamp with AES256-CBC...")
     iv = os.urandom(16)
     print(f"    IV (hex): {iv.hex()}")
     cipher = AES.new(kuser, AES.MODE_CBC, iv)
@@ -63,7 +63,7 @@ def encrypt_timestamp(asn1_data, kuser):
     padded = asn1_data + bytes([pad_len] * pad_len)
     ciphertext = cipher.encrypt(padded)
     full_blob = iv + ciphertext
-    print(f"[+] Encrypted padata blob (hex): {full_blob.hex()}")
+    print(f"Encrypted padata blob (hex): {full_blob.hex()}")
     return full_blob
 
 padata_value = encrypt_timestamp(asn1_data, kuser)
@@ -75,5 +75,5 @@ padata = {
     "padata-value (base64)": base64.b64encode(padata_value).decode()
 }
 
-print("\n[*] Final padata field for AS-REQ:")
+print("\nFinal padata field for AS-REQ:")
 print(json.dumps(padata, indent=2))
