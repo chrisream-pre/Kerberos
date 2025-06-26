@@ -22,7 +22,7 @@ domain = "PRAIRIE-FIRE"
 password = "P@ssw0rd12!@"
 
 def create_unicode_string(value: str, label: str):
-    print(f"\n[+] Encoding {label}: \"{value}\"")
+    print(f"\nEncoding {label}: \"{value}\"")
     encoded = value.encode('utf-16-le')
     print(f"    Encoded UTF-16LE ({len(encoded)} bytes): {encoded.hex()}")
 
@@ -44,7 +44,7 @@ user_str, user_buf = create_unicode_string(username, "Username")
 pass_str, pass_buf = create_unicode_string(password, "Password")
 
 # Build the main structure
-print("\n[+] Creating KERB_INTERACTIVE_LOGON structure")
+print("\nCreating KERB_INTERACTIVE_LOGON structure")
 logon_struct = KERB_INTERACTIVE_LOGON()
 logon_struct.MessageType = 0x02  # KerbInteractiveLogon
 logon_struct.LogonDomainName = domain_str
@@ -55,9 +55,9 @@ print(f"    MessageType: {logon_struct.MessageType} (should be 0x02)")
 print("    Structure size:", ctypes.sizeof(logon_struct), "bytes")
 
 # Dump raw bytes of the structure
-print("\n[+] Serializing structure into memory")
+print("\nSerializing structure into memory")
 raw_bytes = ctypes.string_at(ctypes.byref(logon_struct), ctypes.sizeof(logon_struct))
 
-print("[+] Serialized KERB_INTERACTIVE_LOGON bytes (hex):")
+print("Serialized KERB_INTERACTIVE_LOGON bytes (hex):")
 hex_dump = " ".join(f"{b:02x}" for b in raw_bytes)
 print(f"    {hex_dump}")
