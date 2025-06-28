@@ -1,64 +1,104 @@
 import binascii
-import os
+import base64
 import secrets
 
-from pyasn1.type import univ, tag, namedtype, char
+from pyasn1.type import univ, namedtype, char, tag
 from pyasn1.codec.der import encoder
 
-# Define AP-REQ ASN.1 structure (simplified)
-class APReq(univ.Sequence):
+
+# Dummy Ticket (TGT) and Authenticator Structures
+
+class TicketDummy(univ.Sequence):
     componentType = namedtype.NamedTypes(
-        namedtype.NamedType('pvno', univ.Integer()),                # Protocol version
-        namedtype.NamedType('msg-type', univ.Integer()),            # AP_REQ = 14
-        namedtype.NamedType('ap-options', univ.BitString()),        # Bit flags
-        namedtype.NamedType('TGT', univ.OctetString()),             # TGT (opaque blob)
-        namedtype.NamedType('Authenticator', univ.OctetString())    # Encrypted Authenticator (opaque blob)
+        namedtype.NamedType('realm', char.GeneralString()),
+        namedtype.NamedType('sname', char.GeneralString()),
+        namedtype.NamedType('enc-part', univ.OctetString())
     )
 
-def construct_ap_req(tgt_bytes, authenticator_bytes):
-    print("\nConstructing AP-REQ structure...")
+
+class AuthenticatorDummy(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('cname', char.GeneralString()),
+        namedtype.NamedType('timestamp', char.GeneralString()),
+        namedtype.NamedType('session-key', univ.OctetString())
+    )
+
+
+# Simplified AP-REQ Structure (padata-value)
+
+class APReq(univ.Sequence):
+    componentType = namedtype.NamedTypes(
+        namedtype.NamedType('pvno', univ.Integer()),                # Kerberos v5
+        namedtype.NamedType('msg-type', univ.Integer()),            # AP_REQ = 14
+        namedtype.NamedType('ap-options', univ.BitString()),        # Bit flags
+        namedtype.NamedType('ticket', univ.OctetString()),          # DER TGT blob
+        namedtype.NamedType('authenticator', univ.OctetString())    # DER Authenticator blob
+    )
+
+
+def generate_dummy_tgt():
+    tgt = TicketDummy()
+    tgt.setComponentByName('realm', 'PRAIRIE-FIRE.LAB')
+    tgt.setComponentByName('sname', 'krbtgt')
+    tgt.setComponentByName('enc-part', univ.OctetString(secrets.token_bytes(48)))
+    return encoder.encode(tgt)
+
+
+def generate_dummy_authenticator():
+    auth = AuthenticatorDummy()
+    auth.setComponentByName('cname', 'gabriela')
+    auth.setComponentByName('timestamp', '20250629123456Z')  # Fixed for consistency
+    auth.setComponentByName('session-key', secrets.token_bytes(32))
+    return encoder.encode(auth)
+
+
+def construct_ap_req(tgt_der, auth_der):
+    print("\nConstructing ASN.1 AP-REQ structure...")
     ap_req = APReq()
     ap_req.setComponentByName('pvno', 5)
-    ap_req.setComponentByName('msg-type', 14)  # Message type for AP-REQ
-    ap_req.setComponentByName('ap-options', univ.BitString("'00000000'B"))  # No special options
-    ap_req.setComponentByName('TGT', tgt_bytes)
-    ap_req.setComponentByName('Authenticator', authenticator_bytes)
+    ap_req.setComponentByName('msg-type', 14)
+    ap_req.setComponentByName('ap-options', univ.BitString("'00000000'B"))
+    ap_req.setComponentByName('ticket', univ.OctetString(tgt_der))
+    ap_req.setComponentByName('authenticator', univ.OctetString(auth_der))
 
-    print("\nAP-REQ Structure (before DER encoding):")
+    print("\nAP-REQ (before DER encoding):")
     print(ap_req.prettyPrint())
 
-    encoded_ap_req = encoder.encode(ap_req)
+    encoded = encoder.encode(ap_req)
     print("\nDER-encoded AP-REQ (hex):")
-    print(binascii.hexlify(encoded_ap_req).decode())
-    print(f"\nTotal Length: {len(encoded_ap_req)} bytes")
+    print(binascii.hexlify(encoded).decode())
+    print("\nDER-encoded AP-REQ (base64):")
+    print(base64.b64encode(encoded).decode())
+    print(f"\nFinal AP-REQ Length: {len(encoded)} bytes")
+
 
 def main():
-    print("Kerberos AP_REQ Generator")
-    choice = input("Use randomized TGT and Authenticator? (y/N): ").strip().lower()
+    print("Kerberos AP-REQ Generator")
+    choice = input("Use randomized DER blobs for TGT and Authenticator? (y/N): ").strip().lower()
     use_random = choice == 'y'
 
     if use_random:
-        tgt = secrets.token_bytes(128)
-        authenticator = secrets.token_bytes(96)
-        print("Generated random TGT (128 bytes) and Authenticator (96 bytes).")
+        tgt_der = generate_dummy_tgt()
+        auth_der = generate_dummy_authenticator()
+        print("\nGenerated random DER-encoded TGT and Authenticator blobs.")
     else:
-        tgt = binascii.unhexlify(
-            "6d574bdd17cc5e2125531e42616e4798281dd5e3a30cb44eef7d07fea9f9e43c43863763dc0b716c7979978e8401afc2"
-            "d74c22b80dac092d046b6a60c071b489cb61eb2158e633e4fe66a1a7dfc924a2"
+        tgt_der = binascii.unhexlify(
+            "3081a4310b1b0f505241495249452d464952452e4c4142310a1b066b726274677431820100" +
+            "0480302e7b84aa3792a0a994cadc65878de812b9884d60309fd06b248f48b16f96ab11f40a89"
         )
-        authenticator = binascii.unhexlify(
-            "06d74bdd17cc5e2125531e42616e4798281dd5e3a30cb44eef7d07fea9f9e43c43863763dc0b716c7979978e8401afc2"
-            "d74c22b80dac092d046b6a60c071b489cb61eb2158e633e4fe66a1a7dfc924a2"
+        auth_der = binascii.unhexlify(
+            "303e1b084761627269656c611b0f32303235303632393132333435365a0420aabbccddeeff" +
+            "00112233445566778899aabbccddeeff0011223344556677"
         )
-        print("Using hardcoded example values for TGT and Authenticator.")
+        print("\n[+] Using hardcoded DER-encoded values.")
 
-    print("\nTGT (hex):")
-    print(binascii.hexlify(tgt).decode())
+    print("\nTGT DER (hex):")
+    print(binascii.hexlify(tgt_der).decode())
+    print("\nAuthenticator DER (hex):")
+    print(binascii.hexlify(auth_der).decode())
 
-    print("\nAuthenticator (hex):")
-    print(binascii.hexlify(authenticator).decode())
+    construct_ap_req(tgt_der, auth_der)
 
-    construct_ap_req(tgt, authenticator)
 
 if __name__ == '__main__':
     main()
