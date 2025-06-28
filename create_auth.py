@@ -99,8 +99,8 @@ def create_authenticator(use_random=False):
 
 def main():
     print("Kerberos Authenticator Generator + Encryptor")
-    choice = input("Use randomized session key and seq-number? (y/n): ").strip().lower()
-    use_random = choice == 'y'
+    choice = input("Use randomized session key and seq-number? (y/N): ").strip().lower()
+    use_random = choice == 'n'
     create_authenticator(use_random)
 
 if __name__ == '__main__':
